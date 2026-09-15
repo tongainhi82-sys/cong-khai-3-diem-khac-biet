@@ -1,0 +1,280 @@
+name: Generate video from private repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: "Only check checkout, files and settings; do not generate or upload"
+        required: false
+        default: false
+        type: boolean
+      game_count:
+        description: "Number of games to generate (positive integer)"
+        required: false
+        default: "5"
+        type: string
+      cpu_inpaint_steps:
+        description: "DreamShaper CPU steps (7=faster, 8=slightly higher quality)"
+        required: false
+        default: "8"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spot-difference-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: private-source
+
+    env:
+      PRIVATE_REPO: "colfleshjadein2404997-oss/TIM-3-MOI"
+      PRIVATE_REF: "main"
+      PYTHONUNBUFFERED: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      DIFFERENCE_FORGE_SEED: "${{ github.run_id }}-${{ github.run_attempt }}"
+
+      # Default is 5, but Run workflow can override this with any positive integer.
+      DF_GAME_COUNT: "${{ inputs.game_count || '5' }}"
+      DF_COUNTDOWN_SECONDS: "90"
+      DF_REVEAL_SECONDS: "10"
+      DF_INTRO_SECONDS: "48"
+      DF_TRANSITION_SECONDS: "4.2"
+      DF_OUTRO_SECONDS: "38"
+      DF_OUTPUT_DIR: "dist"
+      DF_VIDEO_FILENAME: "spot-the-difference.mp4"
+      DF_WIDTH: "1920"
+      DF_HEIGHT: "1080"
+      DF_FPS: "24"
+
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_MODEL: "@cf/black-forest-labs/flux-1-schnell"
+      CF_STEPS: "8"
+      CF_REQUEST_TIMEOUT: "180"
+      POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+      POLLINATIONS_MODEL: "flux"
+      AIHORDE_API_KEY: ${{ secrets.AIHORDE_API_KEY }}
+      AIHORDE_TIMEOUT: "600"
+      CF_STYLE_SUFFIX: >-
+        bold Japanese cel illustration, deeply saturated colors, thick dark clean outlines,
+        crisp hard edges, flat purposeful shading, high local contrast, no pastel haze,
+        no blur, no text, no logo, no watermark, no split screen, no collage
+
+      # FastSAM remains the fast proposal generator. SAM2.1 refines only the best ~8 boxes.
+      MASK_MIN_AREA_RATIO: "0.012"
+      MASK_MAX_AREA_RATIO: "0.065"
+      FASTSAM_MODEL: "FastSAM-x.pt"
+      FASTSAM_IMGSZ: "1024"
+      FASTSAM_CONF: "0.4"
+      SAM2_MODEL: "facebook/sam2.1-hiera-small"
+      SAM2_REFINE_LIMIT: "8"
+      SAM2_MIN_FASTSAM_IOU: "0.25"
+      SAM2_MIN_MODEL_IOU: "0.45"
+      SAM2_MIN_BOX_CONTAINMENT: "0.78"
+      SAM2_UNLOAD_AFTER_REFINE: "true"
+
+      # Strict one-difference / one-object geometry remains mandatory after SAM2 refinement.
+      MASK_REFINE_KERNEL: "3"
+      MASK_REFINE_ERODE: "1"
+      MASK_MAX_HOLE_RATIO: "0.035"
+      SINGLE_OBJECT_ERODE_ITERS: "2"
+      SINGLE_OBJECT_MIN_ISLAND_AREA_RATIO: "0.08"
+      SINGLE_OBJECT_MIN_DOMINANT_ISLAND: "0.92"
+      SINGLE_OBJECT_MIN_RAW_DOMINANT: "0.90"
+      OBJECT_FILTER_MIN_AREA_RATIO: "0.006"
+      OBJECT_FILTER_MAX_AREA_RATIO: "0.075"
+      OBJECT_FILTER_MIN_FILL: "0.18"
+      OBJECT_FILTER_MIN_SOLIDITY: "0.50"
+      OBJECT_FILTER_MIN_COMPACTNESS: "0.040"
+      OBJECT_FILTER_MIN_EDGE: "0.0"
+      OBJECT_FILTER_MAX_ASPECT: "4.5"
+      MIN_ISOLATED_CANDIDATES: "3"
+      SCENE_REGEN_RETRIES: "3"
+
+      # Adaptive Grounding DINO Tiny: focused high-confidence pass, then lower-threshold retry.
+      GROUNDING_DINO_MODEL: "IDEA-Research/grounding-dino-tiny"
+      GROUNDING_DINO_CPU_MODEL: "IDEA-Research/grounding-dino-tiny"
+      GROUNDING_DINO_GPU_MODEL: "IDEA-Research/grounding-dino-tiny"
+      GROUNDING_DINO_THRESHOLD: "0.22"
+      GROUNDING_PRIMARY_THRESHOLD: "0.22"
+      GROUNDING_RETRY_THRESHOLD: "0.17"
+      GROUNDING_TARGET_COUNT: "3"
+      GROUNDING_PRIMARY_LABEL_LIMIT: "16"
+      GROUNDING_RETRY_LABEL_LIMIT: "24"
+      GROUNDING_MIN_MASK_OVERLAP: "0.18"
+      GROUNDING_UNLOAD_AFTER_SCENE: "true"
+      CENTER_EXCLUSION_X: "0.12"
+      CENTER_EXCLUSION_Y: "0.13"
+      MAX_SELECTABLE_OBJECT_AREA: "0.055"
+      TARGET_OBJECT_AREA: "0.024"
+      MIN_DIFFERENCE_DISTANCE: "0.23"
+      SCENE_FUSED_MIN_SIGLIP: "0.010"
+      SCENE_FUSED_MIN_GROUNDING: "0.20"
+
+      # Higher-resolution SigLIP2 is the primary semantic classifier.
+      # Only uncertain crops reach the official Transformers-converted Florence checkpoint.
+      SIGLIP2_CLASSIFIER_MODEL: "google/siglip2-base-patch16-512"
+      SIGLIP_BATCH_SIZE: "2"
+      SIGLIP_MIN_SCORE: "0.055"
+      SIGLIP_MIN_MARGIN: "0.004"
+      SIGLIP_REJECT_MARGIN: "0.010"
+      SIGLIP_SEMANTIC_MIN_RETAIN: "0.18"
+      FLORENCE_FALLBACK_ENABLED: "true"
+      FLORENCE_BASE_FT_MODEL: "florence-community/Florence-2-base-ft"
+      FLORENCE_LARGE_FT_MODEL: "florence-community/Florence-2-large-ft"
+      FLORENCE_LARGE_MIN_RAM_GB: "10"
+      FLORENCE_UNLOAD_AFTER_CLASSIFY: "true"
+      FLORENCE_MAX_FALLBACKS: "8"
+      SEMANTIC_TARGET_CANDIDATES: "8"
+      CLIP_CLASSIFY_LIMIT: "8"
+      SEMANTIC_TOP_K: "5"
+      SEMANTIC_TOP1_REJECT_CEILING: "0.30"
+      SEMANTIC_TOP1_REJECT_GAP: "0.10"
+      SEMANTIC_FALLBACK_TOPK: "2"
+      STRUCTURE_MIN_EDGE_RETAIN: "0.40"
+
+      # Base QA remains strict. quality_diversity_runner applies proportional
+      # changed-area/component thresholds only for planned local edit types.
+      MIN_EDIT_COLOR_DISTANCE: "95.0"
+      MIN_CLEAR_CHANGED_RATIO: "0.25"
+      MIN_CHANGE_COMPONENT_PURITY: "0.70"
+      MIN_CHANGED_PIXEL_DELTA: "28.0"
+      MIN_STRONG_CHANGE_RATIO: "0.15"
+
+      # CPU DreamShaper keeps 320px quality but uses only 7-8 steps.
+      # The base INPAINT_STEPS remains 10 for non-CPU backends.
+      DIFFUSERS_BACKEND: "auto"
+      FLUX_FILL_MODEL: "black-forest-labs/FLUX.1-Fill-dev"
+      CPU_INPAINT_MODEL: "Lykon/dreamshaper-8-inpainting"
+      CPU_INPAINT_FALLBACK_MODEL: "sd2-community/stable-diffusion-2-inpainting"
+      SDXL_INPAINT_MODEL: "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+      SD_INPAINT_MODEL: "sd2-community/stable-diffusion-2-inpainting"
+      INPAINT_SIZE: "320"
+      INPAINT_STEPS: "10"
+      CPU_DREAMSHAPER_SIZE: "320"
+      CPU_DREAMSHAPER_STEPS: "${{ inputs.cpu_inpaint_steps || '8' }}"
+      INPAINT_RETRIES: "2"
+      CPU_INPAINT_RETRIES: "1"
+      INPAINT_STRENGTH: "0.72"
+      MAX_INPAINT_CANDIDATES: "12"
+
+      # Cheap renderability gate before an expensive CPU inpaint.
+      CPU_PREFILTER_MIN_INTERIOR_RATIO: "0.18"
+      CPU_PREFILTER_MIN_FILL: "0.20"
+      CPU_PREFILTER_MIN_RETAINED_MASK: "0.62"
+      CPU_PREFILTER_MIN_BBOX_SIDE: "28"
+      CPU_PREFILTER_POOL_LIMIT: "18"
+      CPU_PREFILTER_STRUCTURAL_MIN_SCORE: "5.2"
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+      YT_UPLOAD_ENABLED: "true"
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      YT_PRIVACY_STATUS: "private"
+      YT_CATEGORY_ID: "24"
+
+    steps:
+      - name: Check checkout token
+        working-directory: .
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          if [ -z "$PRIVATE_REPO_TOKEN" ]; then
+            echo "::error::Add the PRIVATE_REPO_TOKEN Actions secret to this public repository."
+            exit 1
+          fi
+
+      - name: Checkout private source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PRIVATE_REPO }}
+          ref: ${{ env.PRIVATE_REF }}
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate runtime inputs
+        run: |
+          if ! [[ "$DF_GAME_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "game_count must be a positive integer; got: $DF_GAME_COUNT"
+            exit 1
+          fi
+          if ! [[ "$CPU_DREAMSHAPER_STEPS" =~ ^(7|8)$ ]]; then
+            echo "cpu_inpaint_steps must be 7 or 8; got: $CPU_DREAMSHAPER_STEPS"
+            exit 1
+          fi
+          echo "Generating $DF_GAME_COUNT games; CPU DreamShaper=$CPU_DREAMSHAPER_SIZE px / $CPU_DREAMSHAPER_STEPS steps"
+
+      - name: Validate private source and upload settings
+        run: |
+          python - <<'PYCODE'
+          import ast
+          import os
+          from pathlib import Path
+          files = (
+              'difference_forge_cf.py', 'video_presentation.py', 'closed_set_runner.py',
+              'siglip_florence_runner.py', 'advanced_runner.py', 'scene_intelligence_runner.py',
+              'cpu_optimized_runner.py', 'quality_diversity_runner.py',
+              'vision_upgrade_runner.py', 'vision_upgrade_hotfix_runner.py',
+          )
+          for name in files:
+              path = Path(name)
+              if not path.is_file():
+                  raise SystemExit('Missing private source file: ' + name)
+              try:
+                  ast.parse(path.read_text(encoding='utf-8'), filename=name)
+              except SyntaxError:
+                  raise SystemExit('Python syntax check failed: ' + name) from None
+          for name in ('requirements.txt', 'prompt.txt', 'tieude.txt', 'mota.txt',
+                       'assets/fonts/ipaexg.ttf', 'assets/mascot/fox-sheet.webp',
+                       'assets/tutorial/guide-A.webp', 'assets/tutorial/guide-B.webp',
+                       'assets/tutorial/differences.json', 'assets/presentation/brain-orbit.webp'):
+              if not Path(name).is_file():
+                  raise SystemExit('Missing private input or asset: ' + name)
+          if os.getenv('YT_UPLOAD_ENABLED', '').lower() == 'true':
+              missing = [name for name in ('YT_CLIENT_ID', 'YT_CLIENT_SECRET', 'YT_REFRESH_TOKEN')
+                         if not os.getenv(name, '').strip()]
+              if missing:
+                  raise SystemExit('Add Actions secrets to this public repository: ' + ', '.join(missing))
+          print('Private source, presentation assets and upload settings are ready.')
+          PYCODE
+
+      - name: Install runtime
+        if: ${{ !inputs.check_only }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-noto-cjk libgl1
+          python -m pip install --upgrade pip
+          if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+            python -m pip install torch torchvision
+          else
+            python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          fi
+          python -m pip install -r requirements.txt
+          python -m py_compile difference_forge_cf.py video_presentation.py closed_set_runner.py siglip_florence_runner.py advanced_runner.py scene_intelligence_runner.py cpu_optimized_runner.py quality_diversity_runner.py vision_upgrade_runner.py vision_upgrade_hotfix_runner.py
+
+      - name: Generate and upload
+        if: ${{ !inputs.check_only }}
+        run: python vision_upgrade_hotfix_runner.py
+
+      - name: Check completed
+        if: ${{ inputs.check_only }}
+        run: |
+          echo "Check passed. Run this workflow again with check_only unchecked to generate and upload."
+          echo "Check passed. All runtime settings are managed in this public repository." >> "$GITHUB_STEP_SUMMARY"
