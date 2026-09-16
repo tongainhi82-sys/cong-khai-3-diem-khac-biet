@@ -1,12 +1,14 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=3
+LAST_RUN_NUMBER=4
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=2
-REMAINING_UNIQUE=598
-LAST_RUN_PROMPT_INDEXES=1,2
-NEXT_CANDIDATE_INDEX=3
+USED_UNIQUE_COUNT=4
+REMAINING_UNIQUE=596
+LAST_RUN_PROMPT_INDEXES=3,4
+NEXT_CANDIDATE_INDEX=5
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
 USED	3	2	4f64581c873f644eb3a27f36292d4c0b9c89a96243bb5dc0b91e1034933026b9	vintage observatory worktable at night; isolated props: book, bucket, clock, fruit, kite, umbrella; unique peripheral composition with a quiet center.
+USED	4	3	b5d413cfcf0f38f6eb64d73460e85af0de5d06044a547fe6c46aa0a6b87bff27	seaside lighthouse supply room; isolated props: bicycle, gift box, lamp, scarf, vase, watering can; unique peripheral composition with a quiet center.
+USED	4	4	84775c042db2407bb9848e4a751f986c9777e3609f391e4fcf5aac27cfc1d1f4	mountain cable-car station storage corner; isolated props: bicycle, box, bucket, camera, kite, lamp; unique peripheral composition with a quiet center.
