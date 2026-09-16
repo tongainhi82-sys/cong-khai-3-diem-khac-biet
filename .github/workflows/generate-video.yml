@@ -37,7 +37,7 @@ jobs:
       TITLE_START: "1"
 
       # Prompts have no manual selector: they always advance automatically to the next
-      # unused prompt in catalog order and remain de-duplicated via prompt-usage.txt.
+      # unused prompt in extra-prompts.txt and remain de-duplicated via prompt-usage.txt.
       DF_GAME_COUNT: "2"
       CPU_DREAMSHAPER_STEPS: "8"
       YT_PRIVACY_STATUS: "private"  # private | public | unlisted
@@ -53,7 +53,7 @@ jobs:
       DF_HEIGHT: "1080"
       DF_FPS: "24"
 
-      # Public repo checkout containing usage history and externally appended data.
+      # Public repo checkout containing the editable catalogs, description and usage history.
       RUNNER_CONTROL_DIR: "${{ github.workspace }}/runner-control"
 
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
@@ -198,6 +198,10 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Use public YouTube description
+        working-directory: .
+        run: cp runner-control/mota.txt private-source/mota.txt
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -222,7 +226,7 @@ jobs:
           fi
           echo "games=$DF_GAME_COUNT cpu_steps=$CPU_DREAMSHAPER_STEPS run_base=$SEQ_BASE_RUN title_start=$TITLE_START prompt_mode=automatic-next-unused youtube=$YT_PRIVACY_STATUS"
 
-      - name: Validate private source, public data and upload settings
+      - name: Validate private source, public catalogs and upload settings
         run: |
           python - <<'PYCODE'
           import ast
@@ -250,19 +254,35 @@ jobs:
                        'assets/tutorial/guide-A.webp', 'assets/tutorial/guide-B.webp',
                        'assets/tutorial/differences.json', 'assets/presentation/brain-orbit.webp'):
               if not Path(name).is_file():
-                  raise SystemExit('Missing private input or asset: ' + name)
+                  raise SystemExit('Missing private runtime input or asset: ' + name)
 
           control = Path(os.environ['RUNNER_CONTROL_DIR'])
-          for name in ('extra-titles.txt', 'extra-prompts.txt', 'title-usage.txt', 'prompt-usage.txt'):
+          for name in ('extra-titles.txt', 'extra-prompts.txt', 'mota.txt',
+                       'title-usage.txt', 'prompt-usage.txt'):
               if not (control / name).is_file():
                   raise SystemExit('Missing public control file: ' + name)
+
+          def active_lines(path):
+              return [
+                  line.strip() for line in path.read_text(encoding='utf-8').splitlines()
+                  if line.strip() and not line.lstrip().startswith('#')
+              ]
+
+          titles = active_lines(control / 'extra-titles.txt')
+          prompts = active_lines(control / 'extra-prompts.txt')
+          if len(titles) < 300:
+              raise SystemExit(f'extra-titles.txt must contain at least 300 titles; got {len(titles)}')
+          if len(prompts) < 600:
+              raise SystemExit(f'extra-prompts.txt must contain at least 600 prompts; got {len(prompts)}')
+          if not (control / 'mota.txt').read_text(encoding='utf-8').strip():
+              raise SystemExit('Public mota.txt is empty')
 
           if os.getenv('YT_UPLOAD_ENABLED', '').lower() == 'true':
               missing = [name for name in ('YT_CLIENT_ID', 'YT_CLIENT_SECRET', 'YT_REFRESH_TOKEN')
                          if not os.getenv(name, '').strip()]
               if missing:
                   raise SystemExit('Add Actions secrets to this public repository: ' + ', '.join(missing))
-          print('Private source, public sequence state and upload settings are ready.')
+          print(f'Public catalogs ready: titles={len(titles)} prompts={len(prompts)}; public mota.txt active.')
           PYCODE
 
       - name: Install runtime
