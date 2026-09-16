@@ -31,14 +31,14 @@ jobs:
       # Starting number for the run sequence only. It does NOT control prompts.
       # Example: SEQ_BASE_RUN="10" means the first successful run is recorded as run 10,
       # then subsequent successful runs advance to 11, 12, ... while this base stays unchanged.
-      SEQ_BASE_RUN: "1"
+      SEQ_BASE_RUN: "3"
       # First title index. Titles then advance in order after successful runs.
       # Titles are intentionally NOT de-duplicated.
       TITLE_START: "1"
 
       # Prompts have no manual selector: they always advance automatically to the next
       # unused prompt in catalog order and remain de-duplicated via prompt-usage.txt.
-      DF_GAME_COUNT: "5"
+      DF_GAME_COUNT: "2"
       CPU_DREAMSHAPER_STEPS: "8"
       YT_PRIVACY_STATUS: "private"  # private | public | unlisted
 
