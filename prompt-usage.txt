@@ -1,10 +1,12 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=0
-TOTAL_AVAILABLE_UNIQUE=0
-USED_UNIQUE_COUNT=0
-REMAINING_UNIQUE=0
-LAST_RUN_PROMPT_INDEXES=
-NEXT_CANDIDATE_INDEX=1
+LAST_RUN_NUMBER=3
+TOTAL_AVAILABLE_UNIQUE=600
+USED_UNIQUE_COUNT=2
+REMAINING_UNIQUE=598
+LAST_RUN_PROMPT_INDEXES=1,2
+NEXT_CANDIDATE_INDEX=3
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
+USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
+USED	3	2	4f64581c873f644eb3a27f36292d4c0b9c89a96243bb5dc0b91e1034933026b9	vintage observatory worktable at night; isolated props: book, bucket, clock, fruit, kite, umbrella; unique peripheral composition with a quiet center.
