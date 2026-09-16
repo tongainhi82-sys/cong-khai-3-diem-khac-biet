@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=5
+LAST_RUN_NUMBER=6
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=6
-REMAINING_UNIQUE=594
-LAST_RUN_PROMPT_INDEXES=5,6
-NEXT_CANDIDATE_INDEX=7
+USED_UNIQUE_COUNT=7
+REMAINING_UNIQUE=593
+LAST_RUN_PROMPT_INDEXES=7
+NEXT_CANDIDATE_INDEX=8
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -14,3 +14,4 @@ USED	4	3	b5d413cfcf0f38f6eb64d73460e85af0de5d06044a547fe6c46aa0a6b87bff27	seasid
 USED	4	4	84775c042db2407bb9848e4a751f986c9777e3609f391e4fcf5aac27cfc1d1f4	mountain cable-car station storage corner; isolated props: bicycle, box, bucket, camera, kite, lamp; unique peripheral composition with a quiet center.
 USED	5	5	8bf760f895778473782b4aedb85d5889a9b5a64426b64725d983326faf934d25	snowy cabin mudroom; isolated props: bench, book, box, kite, lantern, toy train; unique peripheral composition with a quiet center.
 USED	5	6	be0b9fea2df13bccf3093b046b123a19b8dfc23b2a345e9d8ed13ba64c909b3a	pottery workshop drying shelf; isolated props: bag, ball, bicycle, hat, lamp, radio; unique peripheral composition with a quiet center.
+USED	6	7	f0046a5f0555f96071ee8a34d29c6901e5c5c5c3237f390590068a9182bfe64c	artist paint studio corner; isolated props: bag, crate, cup, plant pot, shoe, teapot; unique peripheral composition with a quiet center.
