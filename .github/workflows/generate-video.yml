@@ -2,25 +2,9 @@ name: Generate video from private repo
 
 on:
   workflow_dispatch:
-    inputs:
-      check_only:
-        description: "Only check checkout, files and settings; do not generate or upload"
-        required: false
-        default: false
-        type: boolean
-      game_count:
-        description: "Number of games to generate (positive integer)"
-        required: false
-        default: "5"
-        type: string
-      cpu_inpaint_steps:
-        description: "DreamShaper CPU steps (7=faster, 8=slightly higher quality)"
-        required: false
-        default: "8"
-        type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: spot-difference-${{ github.ref }}
@@ -43,8 +27,17 @@ jobs:
       TOKENIZERS_PARALLELISM: "false"
       DIFFERENCE_FORGE_SEED: "${{ github.run_id }}-${{ github.run_attempt }}"
 
-      # Default is 5, but Run workflow can override this with any positive integer.
-      DF_GAME_COUNT: "${{ inputs.game_count || '5' }}"
+      # ===== EDIT THESE VALUES DIRECTLY IN THIS PUBLIC YML =====
+      # Prompt sequence base. Prompts already listed in prompt-usage.txt are skipped.
+      SEQ_BASE_RUN: "1"
+      # First title index. Titles then advance in order after successful runs.
+      # Titles are intentionally NOT de-duplicated.
+      TITLE_START: "1"
+
+      DF_GAME_COUNT: "5"
+      CPU_DREAMSHAPER_STEPS: "8"
+      YT_PRIVACY_STATUS: "private"  # private | public | unlisted
+
       DF_COUNTDOWN_SECONDS: "90"
       DF_REVEAL_SECONDS: "10"
       DF_INTRO_SECONDS: "48"
@@ -55,6 +48,9 @@ jobs:
       DF_WIDTH: "1920"
       DF_HEIGHT: "1080"
       DF_FPS: "24"
+
+      # Public repo checkout containing usage history and externally appended data.
+      RUNNER_CONTROL_DIR: "${{ github.workspace }}/runner-control"
 
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -70,7 +66,6 @@ jobs:
         crisp hard edges, flat purposeful shading, high local contrast, no pastel haze,
         no blur, no text, no logo, no watermark, no split screen, no collage
 
-      # FastSAM remains the fast proposal generator. SAM2.1 refines only the best ~8 boxes.
       MASK_MIN_AREA_RATIO: "0.012"
       MASK_MAX_AREA_RATIO: "0.065"
       FASTSAM_MODEL: "FastSAM-x.pt"
@@ -83,7 +78,6 @@ jobs:
       SAM2_MIN_BOX_CONTAINMENT: "0.78"
       SAM2_UNLOAD_AFTER_REFINE: "true"
 
-      # Strict one-difference / one-object geometry remains mandatory after SAM2 refinement.
       MASK_REFINE_KERNEL: "3"
       MASK_REFINE_ERODE: "1"
       MASK_MAX_HOLE_RATIO: "0.035"
@@ -101,7 +95,6 @@ jobs:
       MIN_ISOLATED_CANDIDATES: "3"
       SCENE_REGEN_RETRIES: "3"
 
-      # Adaptive Grounding DINO Tiny: focused high-confidence pass, then lower-threshold retry.
       GROUNDING_DINO_MODEL: "IDEA-Research/grounding-dino-tiny"
       GROUNDING_DINO_CPU_MODEL: "IDEA-Research/grounding-dino-tiny"
       GROUNDING_DINO_GPU_MODEL: "IDEA-Research/grounding-dino-tiny"
@@ -121,8 +114,6 @@ jobs:
       SCENE_FUSED_MIN_SIGLIP: "0.010"
       SCENE_FUSED_MIN_GROUNDING: "0.20"
 
-      # Higher-resolution SigLIP2 is the primary semantic classifier.
-      # Only uncertain crops reach the official Transformers-converted Florence checkpoint.
       SIGLIP2_CLASSIFIER_MODEL: "google/siglip2-base-patch16-512"
       SIGLIP_BATCH_SIZE: "2"
       SIGLIP_MIN_SCORE: "0.055"
@@ -143,16 +134,12 @@ jobs:
       SEMANTIC_FALLBACK_TOPK: "2"
       STRUCTURE_MIN_EDGE_RETAIN: "0.40"
 
-      # Base QA remains strict. quality_diversity_runner applies proportional
-      # changed-area/component thresholds only for planned local edit types.
       MIN_EDIT_COLOR_DISTANCE: "95.0"
       MIN_CLEAR_CHANGED_RATIO: "0.25"
       MIN_CHANGE_COMPONENT_PURITY: "0.70"
       MIN_CHANGED_PIXEL_DELTA: "28.0"
       MIN_STRONG_CHANGE_RATIO: "0.15"
 
-      # CPU DreamShaper keeps 320px quality but uses only 7-8 steps.
-      # The base INPAINT_STEPS remains 10 for non-CPU backends.
       DIFFUSERS_BACKEND: "auto"
       FLUX_FILL_MODEL: "black-forest-labs/FLUX.1-Fill-dev"
       CPU_INPAINT_MODEL: "Lykon/dreamshaper-8-inpainting"
@@ -162,13 +149,11 @@ jobs:
       INPAINT_SIZE: "320"
       INPAINT_STEPS: "10"
       CPU_DREAMSHAPER_SIZE: "320"
-      CPU_DREAMSHAPER_STEPS: "${{ inputs.cpu_inpaint_steps || '8' }}"
       INPAINT_RETRIES: "2"
       CPU_INPAINT_RETRIES: "1"
       INPAINT_STRENGTH: "0.72"
       MAX_INPAINT_CANDIDATES: "12"
 
-      # Cheap renderability gate before an expensive CPU inpaint.
       CPU_PREFILTER_MIN_INTERIOR_RATIO: "0.18"
       CPU_PREFILTER_MIN_FILL: "0.20"
       CPU_PREFILTER_MIN_RETAINED_MASK: "0.62"
@@ -182,11 +167,14 @@ jobs:
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
 
-      # YouTube visibility is controlled ONLY here: private | public | unlisted.
-      YT_PRIVACY_STATUS: "private"
-
     steps:
-      - name: Check checkout token
+      - name: Checkout public control repo
+        uses: actions/checkout@v4
+        with:
+          path: runner-control
+          fetch-depth: 0
+
+      - name: Check private checkout token
         working-directory: .
         env:
           PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
@@ -210,34 +198,39 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate runtime inputs
+      - name: Validate public controls
         run: |
-          if ! [[ "$DF_GAME_COUNT" =~ ^[1-9][0-9]*$ ]]; then
-            echo "game_count must be a positive integer; got: $DF_GAME_COUNT"
-            exit 1
-          fi
+          for pair in "DF_GAME_COUNT=$DF_GAME_COUNT" "SEQ_BASE_RUN=$SEQ_BASE_RUN" "TITLE_START=$TITLE_START"; do
+            value="${pair#*=}"
+            name="${pair%%=*}"
+            if ! [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+              echo "$name must be a positive integer; got: $value"
+              exit 1
+            fi
+          done
           if ! [[ "$CPU_DREAMSHAPER_STEPS" =~ ^(7|8)$ ]]; then
-            echo "cpu_inpaint_steps must be 7 or 8; got: $CPU_DREAMSHAPER_STEPS"
+            echo "CPU_DREAMSHAPER_STEPS must be 7 or 8; got: $CPU_DREAMSHAPER_STEPS"
             exit 1
           fi
           if ! [[ "$YT_PRIVACY_STATUS" =~ ^(private|public|unlisted)$ ]]; then
             echo "YT_PRIVACY_STATUS must be private, public or unlisted; got: $YT_PRIVACY_STATUS"
             exit 1
           fi
-          echo "Generating $DF_GAME_COUNT games; CPU DreamShaper=$CPU_DREAMSHAPER_SIZE px / $CPU_DREAMSHAPER_STEPS steps; YouTube=$YT_PRIVACY_STATUS"
+          echo "games=$DF_GAME_COUNT cpu_steps=$CPU_DREAMSHAPER_STEPS prompt_base=$SEQ_BASE_RUN title_start=$TITLE_START youtube=$YT_PRIVACY_STATUS"
 
-      - name: Validate private source and upload settings
+      - name: Validate private source, public data and upload settings
         run: |
           python - <<'PYCODE'
           import ast
           import os
           from pathlib import Path
+
           files = (
               'difference_forge_cf.py', 'video_presentation.py', 'closed_set_runner.py',
               'siglip_florence_runner.py', 'advanced_runner.py', 'scene_intelligence_runner.py',
               'cpu_optimized_runner.py', 'quality_diversity_runner.py',
               'vision_upgrade_runner.py', 'vision_upgrade_hotfix_runner.py',
-              'privacy_control_runner.py',
+              'privacy_control_runner.py', 'sequence_control_runner.py', 'prompt_catalog_v2.py',
           )
           for name in files:
               path = Path(name)
@@ -247,22 +240,28 @@ jobs:
                   ast.parse(path.read_text(encoding='utf-8'), filename=name)
               except SyntaxError:
                   raise SystemExit('Python syntax check failed: ' + name) from None
+
           for name in ('requirements.txt', 'prompt.txt', 'tieude.txt', 'mota.txt',
                        'assets/fonts/ipaexg.ttf', 'assets/mascot/fox-sheet.webp',
                        'assets/tutorial/guide-A.webp', 'assets/tutorial/guide-B.webp',
                        'assets/tutorial/differences.json', 'assets/presentation/brain-orbit.webp'):
               if not Path(name).is_file():
                   raise SystemExit('Missing private input or asset: ' + name)
+
+          control = Path(os.environ['RUNNER_CONTROL_DIR'])
+          for name in ('extra-titles.txt', 'extra-prompts.txt', 'title-usage.txt', 'prompt-usage.txt'):
+              if not (control / name).is_file():
+                  raise SystemExit('Missing public control file: ' + name)
+
           if os.getenv('YT_UPLOAD_ENABLED', '').lower() == 'true':
               missing = [name for name in ('YT_CLIENT_ID', 'YT_CLIENT_SECRET', 'YT_REFRESH_TOKEN')
                          if not os.getenv(name, '').strip()]
               if missing:
                   raise SystemExit('Add Actions secrets to this public repository: ' + ', '.join(missing))
-          print('Private source, presentation assets and upload settings are ready.')
+          print('Private source, public sequence state and upload settings are ready.')
           PYCODE
 
       - name: Install runtime
-        if: ${{ !inputs.check_only }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg fonts-noto-cjk libgl1
@@ -273,14 +272,21 @@ jobs:
             python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           fi
           python -m pip install -r requirements.txt
-          python -m py_compile difference_forge_cf.py video_presentation.py closed_set_runner.py siglip_florence_runner.py advanced_runner.py scene_intelligence_runner.py cpu_optimized_runner.py quality_diversity_runner.py vision_upgrade_runner.py vision_upgrade_hotfix_runner.py privacy_control_runner.py
+          python -m py_compile difference_forge_cf.py video_presentation.py closed_set_runner.py siglip_florence_runner.py advanced_runner.py scene_intelligence_runner.py cpu_optimized_runner.py quality_diversity_runner.py vision_upgrade_runner.py vision_upgrade_hotfix_runner.py privacy_control_runner.py sequence_control_runner.py prompt_catalog_v2.py
 
       - name: Generate and upload
-        if: ${{ !inputs.check_only }}
-        run: python privacy_control_runner.py
+        run: python sequence_control_runner.py
 
-      - name: Check completed
-        if: ${{ inputs.check_only }}
+      - name: Commit updated title and prompt usage
+        working-directory: runner-control
         run: |
-          echo "Check passed. Run this workflow again with check_only unchecked to generate and upload."
-          echo "Check passed. All runtime settings are managed in this public repository." >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add title-usage.txt prompt-usage.txt
+          if git diff --cached --quiet; then
+            echo "No usage-state changes to commit."
+            exit 0
+          fi
+          git commit -m "Update title and prompt usage [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
