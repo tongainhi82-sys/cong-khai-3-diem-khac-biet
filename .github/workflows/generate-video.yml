@@ -181,8 +181,9 @@ jobs:
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
       YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+
+      # YouTube visibility is controlled ONLY here: private | public | unlisted.
       YT_PRIVACY_STATUS: "private"
-      YT_CATEGORY_ID: "24"
 
     steps:
       - name: Check checkout token
@@ -219,7 +220,11 @@ jobs:
             echo "cpu_inpaint_steps must be 7 or 8; got: $CPU_DREAMSHAPER_STEPS"
             exit 1
           fi
-          echo "Generating $DF_GAME_COUNT games; CPU DreamShaper=$CPU_DREAMSHAPER_SIZE px / $CPU_DREAMSHAPER_STEPS steps"
+          if ! [[ "$YT_PRIVACY_STATUS" =~ ^(private|public|unlisted)$ ]]; then
+            echo "YT_PRIVACY_STATUS must be private, public or unlisted; got: $YT_PRIVACY_STATUS"
+            exit 1
+          fi
+          echo "Generating $DF_GAME_COUNT games; CPU DreamShaper=$CPU_DREAMSHAPER_SIZE px / $CPU_DREAMSHAPER_STEPS steps; YouTube=$YT_PRIVACY_STATUS"
 
       - name: Validate private source and upload settings
         run: |
@@ -232,6 +237,7 @@ jobs:
               'siglip_florence_runner.py', 'advanced_runner.py', 'scene_intelligence_runner.py',
               'cpu_optimized_runner.py', 'quality_diversity_runner.py',
               'vision_upgrade_runner.py', 'vision_upgrade_hotfix_runner.py',
+              'privacy_control_runner.py',
           )
           for name in files:
               path = Path(name)
@@ -267,11 +273,11 @@ jobs:
             python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           fi
           python -m pip install -r requirements.txt
-          python -m py_compile difference_forge_cf.py video_presentation.py closed_set_runner.py siglip_florence_runner.py advanced_runner.py scene_intelligence_runner.py cpu_optimized_runner.py quality_diversity_runner.py vision_upgrade_runner.py vision_upgrade_hotfix_runner.py
+          python -m py_compile difference_forge_cf.py video_presentation.py closed_set_runner.py siglip_florence_runner.py advanced_runner.py scene_intelligence_runner.py cpu_optimized_runner.py quality_diversity_runner.py vision_upgrade_runner.py vision_upgrade_hotfix_runner.py privacy_control_runner.py
 
       - name: Generate and upload
         if: ${{ !inputs.check_only }}
-        run: python vision_upgrade_hotfix_runner.py
+        run: python privacy_control_runner.py
 
       - name: Check completed
         if: ${{ inputs.check_only }}
