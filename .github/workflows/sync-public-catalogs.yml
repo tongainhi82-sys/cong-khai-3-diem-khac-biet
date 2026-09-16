@@ -1,0 +1,76 @@
+name: Sync public catalogs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/sync-public-catalogs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout public repo
+        uses: actions/checkout@v4
+        with:
+          path: runner-control
+          fetch-depth: 0
+
+      - name: Checkout private source
+        uses: actions/checkout@v4
+        with:
+          repository: colfleshjadein2404997-oss/TIM-3-MOI
+          ref: main
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Export current catalogs and description
+        shell: bash
+        run: |
+          python - <<'PYCODE'
+          import sys
+          from pathlib import Path
+
+          root = Path('private-source').resolve()
+          public = Path('runner-control').resolve()
+          sys.path.insert(0, str(root))
+          import prompt_catalog_v2
+
+          def active_lines(path):
+              return [
+                  line.strip()
+                  for line in path.read_text(encoding='utf-8').splitlines()
+                  if line.strip() and not line.lstrip().startswith('#')
+              ]
+
+          prompts = active_lines(root / 'prompt.txt') + list(prompt_catalog_v2.EXTRA_PROMPTS)
+          titles = active_lines(root / 'tieude.txt')
+
+          if len(prompts) != 600:
+              raise SystemExit(f'Expected 600 prompts, got {len(prompts)}')
+          if len(set(prompts)) != 600:
+              raise SystemExit('The 600 prompt catalog contains duplicates')
+          if len(titles) != 300:
+              raise SystemExit(f'Expected 300 titles, got {len(titles)}')
+
+          (public / 'extra-prompts.txt').write_text('\n'.join(prompts) + '\n', encoding='utf-8')
+          (public / 'extra-titles.txt').write_text('\n'.join(titles) + '\n', encoding='utf-8')
+          (public / 'mota.txt').write_text((root / 'mota.txt').read_text(encoding='utf-8'), encoding='utf-8')
+
+          print(f'Exported prompts={len(prompts)} titles={len(titles)} and mota.txt')
+          PYCODE
+
+      - name: Commit exported files
+        working-directory: runner-control
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add extra-prompts.txt extra-titles.txt mota.txt
+          git commit -m "Expose prompt title and description catalogs [skip ci]"
+          git push origin HEAD:main
