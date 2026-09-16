@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=8
+LAST_RUN_NUMBER=9
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=9
-REMAINING_UNIQUE=591
-LAST_RUN_PROMPT_INDEXES=9
-NEXT_CANDIDATE_INDEX=10
+USED_UNIQUE_COUNT=10
+REMAINING_UNIQUE=590
+LAST_RUN_PROMPT_INDEXES=10
+NEXT_CANDIDATE_INDEX=11
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -17,3 +17,4 @@ USED	5	6	be0b9fea2df13bccf3093b046b123a19b8dfc23b2a345e9d8ed13ba64c909b3a	potter
 USED	6	7	f0046a5f0555f96071ee8a34d29c6901e5c5c5c3237f390590068a9182bfe64c	artist paint studio corner; isolated props: bag, crate, cup, plant pot, shoe, teapot; unique peripheral composition with a quiet center.
 USED	7	8	a3bf03fc2699300e62b22a4bba01df24cf33ad1ae7b9cbff75cf6000ecc14018	clock repair bench; isolated props: bench, bicycle, crate, fruit, scarf, suitcase; unique peripheral composition with a quiet center.
 USED	8	9	435ef6d4ae648e484fbbfdc6e84bab9c8096a00ae81a5afeb6f3f47cb2442538	bicycle repair shop corner; isolated props: clock, crate, kite, mailbox, scarf, toy train; unique peripheral composition with a quiet center.
+USED	9	10	d207a2174a156ae9b692f76b09f8b447dd8ef7a61a6e679462e5635693919eee	coastal fishing shed; isolated props: bench, box, chair, fruit, suitcase, umbrella; unique peripheral composition with a quiet center.
