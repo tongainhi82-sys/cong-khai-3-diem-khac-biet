@@ -28,12 +28,16 @@ jobs:
       DIFFERENCE_FORGE_SEED: "${{ github.run_id }}-${{ github.run_attempt }}"
 
       # ===== EDIT THESE VALUES DIRECTLY IN THIS PUBLIC YML =====
-      # Prompt sequence base. Prompts already listed in prompt-usage.txt are skipped.
+      # Starting number for the run sequence only. It does NOT control prompts.
+      # Example: SEQ_BASE_RUN="10" means the first successful run is recorded as run 10,
+      # then subsequent successful runs advance to 11, 12, ... while this base stays unchanged.
       SEQ_BASE_RUN: "1"
       # First title index. Titles then advance in order after successful runs.
       # Titles are intentionally NOT de-duplicated.
       TITLE_START: "1"
 
+      # Prompts have no manual selector: they always advance automatically to the next
+      # unused prompt in catalog order and remain de-duplicated via prompt-usage.txt.
       DF_GAME_COUNT: "5"
       CPU_DREAMSHAPER_STEPS: "8"
       YT_PRIVACY_STATUS: "private"  # private | public | unlisted
@@ -216,7 +220,7 @@ jobs:
             echo "YT_PRIVACY_STATUS must be private, public or unlisted; got: $YT_PRIVACY_STATUS"
             exit 1
           fi
-          echo "games=$DF_GAME_COUNT cpu_steps=$CPU_DREAMSHAPER_STEPS prompt_base=$SEQ_BASE_RUN title_start=$TITLE_START youtube=$YT_PRIVACY_STATUS"
+          echo "games=$DF_GAME_COUNT cpu_steps=$CPU_DREAMSHAPER_STEPS run_base=$SEQ_BASE_RUN title_start=$TITLE_START prompt_mode=automatic-next-unused youtube=$YT_PRIVACY_STATUS"
 
       - name: Validate private source, public data and upload settings
         run: |
