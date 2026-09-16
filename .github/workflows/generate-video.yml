@@ -38,7 +38,7 @@ jobs:
 
       # Prompts have no manual selector: they always advance automatically to the next
       # unused prompt in extra-prompts.txt and remain de-duplicated via prompt-usage.txt.
-      DF_GAME_COUNT: "2"
+      DF_GAME_COUNT: "1"
       CPU_DREAMSHAPER_STEPS: "8"
       YT_PRIVACY_STATUS: "private"  # private | public | unlisted
 
