@@ -1,0 +1,2 @@
+# Add extra image prompts here when prompt-usage.txt shows the unique pool is nearly exhausted.
+# One prompt per line. Exact duplicate prompts are automatically filtered out.
