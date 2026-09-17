@@ -202,6 +202,104 @@ jobs:
         working-directory: .
         run: cp runner-control/mota.txt private-source/mota.txt
 
+      - name: Patch final-scene spread fallback
+        run: |
+          python - <<'PYCODE'
+          from pathlib import Path
+
+          path = Path("quality_diversity_runner.py")
+          text = path.read_text(encoding="utf-8")
+
+          old_triplet = '''def _best_grouped_triplet(candidates: list[dict[str, object]], size: tuple[int, int]):
+              diag = math.hypot(*size)
+              need = diag * scene.MIN_SPREAD
+          '''
+          new_triplet = '''def _best_grouped_triplet(
+              candidates: list[dict[str, object]],
+              size: tuple[int, int],
+              min_spread: float,
+          ):
+              diag = math.hypot(*size)
+              need = diag * min_spread
+          '''
+          if old_triplet not in text:
+              raise SystemExit("Spread fallback patch failed: triplet selector signature changed")
+          text = text.replace(old_triplet, new_triplet, 1)
+
+          old_error = '''        raise RuntimeError(
+                      f"No color/pattern/structural triplet satisfies {scene.MIN_SPREAD:.2f} image-diagonal spread"
+                  )
+          '''
+          new_error = '''        raise RuntimeError(
+                      f"No color/pattern/structural triplet satisfies {min_spread:.2f} image-diagonal spread"
+                  )
+          '''
+          if old_error not in text:
+              raise SystemExit("Spread fallback patch failed: triplet error block changed")
+          text = text.replace(old_error, new_error, 1)
+
+          old_create = '''    candidates = detect_group_ready_candidates(base)
+              preferred = _best_grouped_triplet(candidates, base.size)
+              preferred_keys = [_key(x) for x in preferred]
+              edited = base.copy()
+              regions: list[dict[str, object]] = []
+              metadata: list[dict[str, object]] = []
+              accepted: list[dict[str, object]] = []
+              used: set[tuple[int, int, int, int]] = set()
+              diag = math.hypot(*base.size)
+              need = diag * scene.MIN_SPREAD
+              attempted = 0
+          '''
+          new_create = '''    candidates = detect_group_ready_candidates(base)
+              provider_meta = getattr(strict, "_LAST_PROVIDER_META", None) or {}
+              regen_attempt = int(provider_meta.get("scene_regeneration_attempt", 0) or 0)
+              final_regen = strict.SCENE_REGEN_RETRIES > 0 and regen_attempt >= strict.SCENE_REGEN_RETRIES
+
+              spread_levels = [scene.MIN_SPREAD]
+              if final_regen:
+                  for fallback_spread in (0.21, 0.19):
+                      if fallback_spread < spread_levels[-1]:
+                          spread_levels.append(fallback_spread)
+
+              last_spread_error = None
+              for min_spread in spread_levels:
+                  try:
+                      preferred = _best_grouped_triplet(candidates, base.size, min_spread)
+                  except RuntimeError as exc:
+                      last_spread_error = exc
+                      if min_spread != spread_levels[-1]:
+                          print(
+                              f"[diversity] final-scene spread {min_spread:.2f} unavailable; "
+                              f"trying {spread_levels[spread_levels.index(min_spread) + 1]:.2f}"
+                          )
+                      continue
+                  if min_spread < scene.MIN_SPREAD:
+                      print(
+                          f"[diversity] final-scene spread fallback active: "
+                          f"{scene.MIN_SPREAD:.2f} -> {min_spread:.2f}"
+                      )
+                  break
+              else:
+                  raise last_spread_error or RuntimeError("No valid grouped triplet")
+
+              preferred_keys = [_key(x) for x in preferred]
+              edited = base.copy()
+              regions: list[dict[str, object]] = []
+              metadata: list[dict[str, object]] = []
+              accepted: list[dict[str, object]] = []
+              used: set[tuple[int, int, int, int]] = set()
+              diag = math.hypot(*base.size)
+              need = diag * min_spread
+              attempted = 0
+          '''
+          if old_create not in text:
+              raise SystemExit("Spread fallback patch failed: create_pair_grouped block changed")
+          text = text.replace(old_create, new_create, 1)
+
+          path.write_text(text, encoding="utf-8")
+          print("Applied final-scene spread fallback: 0.23 -> 0.21 -> 0.19")
+          PYCODE
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
