@@ -21,7 +21,7 @@ jobs:
         working-directory: private-source
 
     env:
-      PRIVATE_REPO: "colfleshjadein2404997-oss/TIM-3-MOI"
+      PRIVATE_REPO: "tongainhi82-sys/rieng-tu-3-diem-khac-biet"
       PRIVATE_REF: "main"
       PYTHONUNBUFFERED: "1"
       TOKENIZERS_PARALLELISM: "false"
