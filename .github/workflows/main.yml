@@ -1,0 +1,85 @@
+name: Get YouTube Refresh Token (Device Flow)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  auth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install requests
+
+      - name: Get device code and poll for token
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+        run: |
+          python -u - <<'PY'
+          import os, time, requests, sys
+          cid = os.environ["YT_CLIENT_ID"].strip()
+          cs = os.environ["YT_CLIENT_SECRET"].strip()
+          scope = "https://www.googleapis.com/auth/youtube.upload"
+
+          # 1) Lấy device code
+          try:
+            r = requests.post(
+              "https://oauth2.googleapis.com/device/code",
+              data={"client_id": cid, "scope": scope},
+              timeout=30
+            )
+            r.raise_for_status()
+            data = r.json()
+          except Exception as e:
+            print("ERROR requesting device code:", e, flush=True)
+            print("Response:", getattr(r, "text", ""), flush=True)
+            sys.exit(1)
+
+          print("\n=== 1) MỞ liên kết và nhập mã ===", flush=True)
+          print("URL xác minh:", data["verification_url"], flush=True)
+          print("MÃ người dùng:", data["user_code"], "\n", flush=True)
+
+          device_code = data["device_code"]
+          interval = int(data.get("interval", 5))
+
+          # 2) Poll lấy token
+          while True:
+            try:
+              t = requests.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                  "client_id": cid,
+                  "client_secret": cs,
+                  "device_code": device_code,
+                  "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                },
+                timeout=30
+              )
+              j = t.json()
+            except Exception as e:
+              print("ERROR polling token:", e, flush=True)
+              print("Response:", getattr(t, "text", ""), flush=True)
+              sys.exit(1)
+
+            if "refresh_token" in j:
+              print("\n=== 2) SAO CHÉP token này và lưu vào Secrets: YT_REFRESH_TOKEN ===", flush=True)
+              print(j["refresh_token"], flush=True)
+              break
+
+            err = j.get("error", "")
+            print("poll:", err or "authorization_pending", flush=True)
+            if err not in ("authorization_pending", "slow_down"):
+              print("Lỗi:", j, flush=True)
+              sys.exit(1)
+            time.sleep(interval)
+          PY
