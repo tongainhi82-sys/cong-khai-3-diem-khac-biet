@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=10
+LAST_RUN_NUMBER=2
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=20
-REMAINING_UNIQUE=580
-LAST_RUN_PROMPT_INDEXES=11,12,13,14,15,16,17,18,19,20
-NEXT_CANDIDATE_INDEX=21
+USED_UNIQUE_COUNT=30
+REMAINING_UNIQUE=570
+LAST_RUN_PROMPT_INDEXES=21,22,23,24,25,26,27,28,29,30
+NEXT_CANDIDATE_INDEX=31
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -28,3 +28,13 @@ USED	10	17	b0edb45b8218fbf020789707c9bd70f6fcdd29c0d5e7ff269774e21bfa376329	stat
 USED	10	18	585c8d5b548845370a549fec228353bb768015682713b187edaf8da8f8f45016	flower market stall; isolated props: ball, book, camera, crate, scarf, watering can; unique peripheral composition with a quiet center.
 USED	10	19	5974d83be47d535158ca622ab8e31afbc9e5ed4f9076acb574c62de77460f0e0	lantern festival storage room; isolated props: box, bucket, chair, cup, mailbox, suitcase; unique peripheral composition with a quiet center.
 USED	10	20	73c66c66d9acfcb86d28e75fcb16c4beda0b48b438c7f04648b07aeff3da6021	tea ceremony preparation shelf; isolated props: book, candle, cup, gift box, lamp, teapot; unique peripheral composition with a quiet center.
+USED	2	21	5d2862ed98fb407d0f1c6d219ad41bd3119a975462be0b7ce45218fa854b91fc	bakery cooling counter; isolated props: basket, bench, drum, gift box, vase, watering can; unique peripheral composition with a quiet center.
+USED	2	22	350c5672e024b4f236e62eae85835a1414b82d517108521863777fa682900e7f	dessert cafe display; isolated props: ball, box, cup, gift box, shoe, watering can; unique peripheral composition with a quiet center.
+USED	2	23	9c4dce46e5c8ebbb64baeee2b30aeb3ba5ba4c8cfc8826c934df491bf832bcf3	juice bar counter; isolated props: bench, bucket, crate, drum, fruit, vase; unique peripheral composition with a quiet center.
+USED	2	24	3cd1ba2d499e7dc50cc90dba122e50a22b75a3e93b0551b6cd2f01e2914fd3c9	camping gear shop; isolated props: bicycle, clock, flower, suitcase, toy train, umbrella; unique peripheral composition with a quiet center.
+USED	2	25	c6c4955e89ed5199c9708cff2a47f96f102384f93a0302e83488db64bd083183	mountain trail checkpoint hut; isolated props: bottle, flower, lamp, lantern, shoe, umbrella; unique peripheral composition with a quiet center.
+USED	2	26	3e00609c87ee9dbae8bfb8205866743d141d16d17dcb159ac8d09e4775b86974	railway lost-and-found room; isolated props: ball, bottle, camera, clock, cup, hat; unique peripheral composition with a quiet center.
+USED	2	27	c628e32d996b862cefbcf9d93dbac84b8ed4ed178c996b0d6ac6fa25ab6ff131	ferry terminal baggage corner; isolated props: bag, basket, bicycle, camera, cup, flag; unique peripheral composition with a quiet center.
+USED	2	28	138d13f25f6cbff9bedfa82ad9bdc8699c07c596af53defb3de66cadc1d762a4	marina equipment room; isolated props: bench, bicycle, camera, fruit, lantern, shoe; unique peripheral composition with a quiet center.
+USED	2	29	6d1b8e9812c94ed7c6a2ac5c80f05655827b85e1ea77bd02a6ba54d44d58cd91	aquarium gift-shop corner; isolated props: book, crate, hat, radio, teapot, watering can; unique peripheral composition with a quiet center.
+USED	2	30	4425a1fb11c007e5f4fafc190f4d13ed44aede0e5c5d5cd53bb8113044c78647	museum restoration table; isolated props: book, bucket, camera, candle, flower, watering can; unique peripheral composition with a quiet center.
