@@ -202,606 +202,121 @@ jobs:
         working-directory: .
         run: cp runner-control/mota.txt private-source/mota.txt
 
-      - name: Patch final-scene guaranteed fallback
+      - name: Patch final-scene quality-only fallback
         run: |
           python - <<'PYCODE'
           from pathlib import Path
 
           path = Path("quality_diversity_runner.py")
           text = path.read_text(encoding="utf-8")
-
-          old_triplet = '''def _best_grouped_triplet(candidates: list[dict[str, object]], size: tuple[int, int]):
-              diag = math.hypot(*size)
-              need = diag * scene.MIN_SPREAD
-          '''
-          new_triplet = '''def _best_grouped_triplet(
-              candidates: list[dict[str, object]],
-              size: tuple[int, int],
-              min_spread: float,
-          ):
-              diag = math.hypot(*size)
-              need = diag * min_spread
-          '''
-          if old_triplet not in text:
-              raise SystemExit("Guaranteed fallback patch failed: triplet selector signature changed")
-          text = text.replace(old_triplet, new_triplet, 1)
-
-          old_error = '''        raise RuntimeError(
-                      f"No color/pattern/structural triplet satisfies {scene.MIN_SPREAD:.2f} image-diagonal spread"
-                  )
-          '''
-          new_error = '''        raise RuntimeError(
-                      f"No color/pattern/structural triplet satisfies {min_spread:.2f} image-diagonal spread"
-                  )
-          '''
-          if old_error not in text:
-              raise SystemExit("Guaranteed fallback patch failed: triplet error block changed")
-          text = text.replace(old_error, new_error, 1)
-
-          old_create = '''    candidates = detect_group_ready_candidates(base)
-              preferred = _best_grouped_triplet(candidates, base.size)
-              preferred_keys = [_key(x) for x in preferred]
-              edited = base.copy()
-              regions: list[dict[str, object]] = []
-              metadata: list[dict[str, object]] = []
-              accepted: list[dict[str, object]] = []
-              used: set[tuple[int, int, int, int]] = set()
-              diag = math.hypot(*base.size)
-              need = diag * scene.MIN_SPREAD
-              attempted = 0
-          '''
-          new_create = '''    candidates = detect_group_ready_candidates(base)
-              provider_meta = getattr(strict, "_LAST_PROVIDER_META", None) or {}
-              regen_attempt = int(provider_meta.get("scene_regeneration_attempt", 0) or 0)
-              final_regen = strict.SCENE_REGEN_RETRIES > 0 and regen_attempt >= strict.SCENE_REGEN_RETRIES
-
-              spread_levels = [scene.MIN_SPREAD]
-              if final_regen:
-                  for fallback_spread in (0.21, 0.19):
-                      if fallback_spread < spread_levels[-1]:
-                          spread_levels.append(fallback_spread)
-
-              last_spread_error = None
-              for min_spread in spread_levels:
-                  try:
-                      preferred = _best_grouped_triplet(candidates, base.size, min_spread)
-                  except RuntimeError as exc:
-                      last_spread_error = exc
-                      if min_spread != spread_levels[-1]:
-                          print(
-                              f"[diversity] final-scene spread {min_spread:.2f} unavailable; "
-                              f"trying {spread_levels[spread_levels.index(min_spread) + 1]:.2f}"
-                          )
-                      continue
-                  if min_spread < scene.MIN_SPREAD:
-                      print(
-                          f"[diversity] final-scene spread fallback active: "
-                          f"{scene.MIN_SPREAD:.2f} -> {min_spread:.2f}"
-                      )
-                  break
-              else:
-                  raise last_spread_error or RuntimeError("No valid grouped triplet")
-
-              preferred_keys = [_key(x) for x in preferred]
-              edited = base.copy()
-              regions: list[dict[str, object]] = []
-              metadata: list[dict[str, object]] = []
-              accepted: list[dict[str, object]] = []
-              used: set[tuple[int, int, int, int]] = set()
-              diag = math.hypot(*base.size)
-              need = diag * min_spread
-              attempted = 0
-          '''
-          if old_create not in text:
-              raise SystemExit("Guaranteed fallback patch failed: create_pair_grouped block changed")
-          text = text.replace(old_create, new_create, 1)
-
-          marker = '''def patch_manifest_quality_diversity() -> None:
-          '''
+          marker = "def patch_manifest_quality_diversity() -> None:\n"
           if marker not in text:
-              raise SystemExit("Guaranteed fallback patch failed: manifest marker changed")
+              raise SystemExit("Quality-only fallback patch failed: manifest marker changed")
 
-          emergency_block = r'''
-          def _final_regeneration_active() -> bool:
-              provider_meta = getattr(strict, "_LAST_PROVIDER_META", None) or {}
-              regen_attempt = int(provider_meta.get("scene_regeneration_attempt", 0) or 0)
-              return strict.SCENE_REGEN_RETRIES > 0 and regen_attempt >= strict.SCENE_REGEN_RETRIES
-
-
-          def _emergency_candidate_pool(image: Image.Image) -> list[dict[str, object]]:
-              raw = cpuopt._ORIGINAL_DETECT(image)
-              rows: list[dict[str, object]] = []
-              for item in raw:
-                  row = dict(item)
-                  category = str(row.get("category", ""))
-                  if category not in strict.CATEGORY_RULES:
-                      continue
-                  if not all(key in row for key in ("mask", "bbox", "center")):
-                      continue
-                  try:
-                      _, meta = cpuopt._candidate_preflight(image, row)
-                  except Exception as exc:
-                      meta = {"reason": f"emergency_preflight:{exc}", "score": 0.0}
-                  row["render_preflight"] = meta
-                  row["renderability_score"] = float(meta.get("score", 0.0))
-                  row["quality"] = float(row.get("quality", 0.0)) + row["renderability_score"] * 1.8
-                  row["emergency_backfill"] = True
-                  rows.append(row)
-
-              rows.sort(
-                  key=lambda x: (
-                      float(x.get("renderability_score", 0.0)),
-                      float(x.get("quality", 0.0)),
-                      float(x.get("category_confidence", 0.0)),
-                  ),
-                  reverse=True,
+          block = r'''
+          def _quality_only_boxes_overlap(a, b, pad: int = 6) -> bool:
+              ax0, ay0, ax1, ay1 = map(int, a)
+              bx0, by0, bx1, by1 = map(int, b)
+              return not (
+                  ax1 + pad <= bx0
+                  or bx1 + pad <= ax0
+                  or ay1 + pad <= by0
+                  or by1 + pad <= ay0
               )
-              if len(rows) < 3:
+
+
+          def _create_pair_quality_only_final(base: Image.Image, seed: int):
+              """Final-scene fallback: ignore triplet/group/spread rules, but keep normal edit QA mandatory."""
+              candidates = cpuopt.detect_prefiltered_candidates(base)
+              if len(candidates) < 3:
                   raise RuntimeError(
-                      f"Emergency final-scene backfill found only {len(rows)}/3 isolated semantic objects"
-                  )
-              print(
-                  "[emergency] backfilled final-scene candidates:",
-                  [(x.get("category"), round(float(x.get("renderability_score", 0.0)), 2)) for x in rows[:12]],
-              )
-              return rows[: cpuopt.PREFILTER_POOL_LIMIT]
-
-
-          def detect_group_ready_candidates(image: Image.Image) -> list[dict[str, object]]:
-              try:
-                  candidates = cpuopt.detect_prefiltered_candidates(image)
-              except RuntimeError as exc:
-                  if not _final_regeneration_active():
-                      raise
-                  print(f"[emergency] renderability prefilter exhausted on final scene: {exc}")
-                  candidates = _emergency_candidate_pool(image)
-
-              structural_count = 0
-              for item in candidates:
-                  structural = (
-                      str(item.get("category", "")) in scene.SPECIAL
-                      and float(item.get("renderability_score", 0.0)) >= cpuopt.PREFILTER_STRUCTURAL_MIN
-                  )
-                  item["structural_capable"] = structural
-                  if structural:
-                      structural_count += 1
-
-              if structural_count < 1:
-                  if not _final_regeneration_active() or not candidates:
-                      raise RuntimeError(
-                          "No high-confidence structural-detail candidate survived prefilter; regenerate before Diffusers"
-                      )
-                  promoted = max(
-                      candidates,
-                      key=lambda x: (
-                          float(x.get("renderability_score", 0.0)),
-                          float(x.get("quality", 0.0)),
-                      ),
-                  )
-                  promoted["structural_capable"] = True
-                  promoted["emergency_structural_promoted"] = True
-                  print(
-                      f"[emergency] promoted structural candidate: {promoted.get('category')} "
-                      f"render={float(promoted.get('renderability_score', 0.0)):.2f}"
+                      f"Quality-only final mode found only {len(candidates)}/3 quality candidates"
                   )
 
-              print(
-                  "[diversity] structural-ready:",
-                  [
-                      (x.get("category"), round(float(x.get("renderability_score", 0.0)), 2))
-                      for x in candidates
-                      if x.get("structural_capable")
-                  ],
-              )
-              return candidates
-
-
-          def _best_grouped_triplet(
-              candidates: list[dict[str, object]],
-              size: tuple[int, int],
-              min_spread: float | None,
-          ):
-              diag = math.hypot(*size)
-              need = 0.0 if min_spread is None else diag * min_spread
-              structural = [x for x in candidates if x.get("structural_capable")]
-              best = None
-              best_score = -1e18
-
-              for s in structural:
-                  others = [x for x in candidates if x is not s]
-                  for a, b in combinations(others, 2):
-                      ds = [_distance(a, b), _distance(a, s), _distance(b, s)]
-                      if min(ds) < need:
-                          continue
-
-                      def pattern_surface(x):
-                          meta = x.get("render_preflight") or {}
-                          return (
-                              float(meta.get("interior_ratio", 0.0)) * 2.0
-                              + float(meta.get("fill", 0.0))
-                              + float(x.get("renderability_score", 0.0)) * 0.15
-                          )
-
-                      if pattern_surface(a) >= pattern_surface(b):
-                          color, pattern = b, a
-                      else:
-                          color, pattern = a, b
-
-                      spread_score = (min(ds) / diag) * 13.0 + (sum(ds) / (3.0 * diag)) * 7.0
-                      render_score = sum(
-                          float(x.get("renderability_score", 0.0)) for x in (color, pattern, s)
-                      ) * 0.65
-                      category_bonus = len(
-                          {str(color.get("category")), str(pattern.get("category")), str(s.get("category"))}
-                      ) * 0.45
-                      score = spread_score + render_score + category_bonus
-                      if score > best_score:
-                          best_score = score
-                          best = [color, pattern, s]
-
-              if best is None:
-                  if min_spread is None:
-                      raise RuntimeError("No distinct color/pattern/structural triplet exists even without a spread floor")
-                  raise RuntimeError(
-                      f"No color/pattern/structural triplet satisfies {min_spread:.2f} image-diagonal spread"
-                  )
-              return best
-
-
-          _NORMAL_GROUPED_PLAN = grouped_plan
-
-
-          def grouped_plan(image: Image.Image, target: dict[str, object], seed: int) -> dict[str, object]:
-              if not target.get("emergency_structural_promoted"):
-                  return _NORMAL_GROUPED_PLAN(image, target, seed)
-
-              category = str(target["category"])
-              rule = strict.CATEGORY_RULES[category]
-              return {
-                  "category": category,
-                  "category_label": rule["object"],
-                  "classifier_confidence": target.get("category_confidence", 0.0),
-                  "edit_type": "single_structural_detail",
-                  "difference_group": "structural",
-                  "target_part": "outer silhouette",
-                  "value": "small local contour change",
-                  "color_distance": 0.0,
-                  "prompt": (
-                      f"One isolated {rule['object']}. Make one small clean local contour change only on the masked "
-                      "outer silhouette while preserving the object's identity and overall footprint. Keep background, "
-                      "neighbors, position and all other parts unchanged. No extra object, text, blob or blur."
-                  ),
-                  "emergency_structural": True,
-              }
-
-
-          def _emergency_direct_edit(
-              image: Image.Image,
-              target: dict[str, object],
-              seed: int,
-              number: int,
-          ):
-              del seed
-              slot = max(1, min(3, int(target.get("difference_slot", number))))
-              group = str(target.get("required_difference_group") or ("color", "pattern", "structural")[slot - 1])
-              category = str(target["category"])
-              rule = strict.CATEGORY_RULES[category]
-              x0, y0, x1, y1 = map(int, target["bbox"])
-              x0 = max(0, min(image.width - 1, x0))
-              y0 = max(0, min(image.height - 1, y0))
-              x1 = max(x0 + 1, min(image.width, x1))
-              y1 = max(y0 + 1, min(image.height, y1))
-
-              crop = image.crop((x0, y0, x1, y1)).convert("RGB")
-              before = np.asarray(crop, dtype=np.uint8).copy()
-              after = before.copy()
-              mask_full = np.asarray(target["mask"], dtype=np.uint8)
-              inside = mask_full[y0:y1, x0:x1] > 0
-              if not np.any(inside):
-                  raise RuntimeError("Emergency deterministic edit received an empty object mask")
-
-              mean = before[inside].mean(axis=0)
-              palette = np.asarray(
-                  [(235, 45, 45), (35, 210, 225), (245, 210, 35), (55, 75, 235), (45, 205, 80), (220, 55, 210)],
-                  dtype=np.float32,
-              )
-              target_rgb = palette[int(np.argmax(np.linalg.norm(palette - mean[None, :], axis=1)))]
-
-              if group == "color":
-                  mixed = before.astype(np.float32)
-                  mixed[inside] = mixed[inside] * 0.12 + target_rgb * 0.88
-                  after = np.clip(mixed, 0, 255).astype(np.uint8)
-                  edit_type = "full_recolor"
-                  target_part = str(rule.get("target", "main surface"))
-                  value = "deterministic high-contrast recolor"
-              elif group == "pattern":
-                  ys, _ = np.where(inside)
-                  lo = int(np.quantile(ys, 0.32))
-                  hi = int(np.quantile(ys, 0.68))
-                  yy = np.arange(after.shape[0])[:, None]
-                  band = inside & (yy >= lo) & (yy <= hi)
-                  if int(np.count_nonzero(band)) < max(8, int(np.count_nonzero(inside) * 0.12)):
-                      band = inside & ((yy % max(4, after.shape[0] // 4)) < max(2, after.shape[0] // 8))
-                  mixed = after.astype(np.float32)
-                  mixed[band] = mixed[band] * 0.10 + target_rgb * 0.90
-                  after = np.clip(mixed, 0, 255).astype(np.uint8)
-                  edit_type = "broad_horizontal_stripe"
-                  target_part = str(rule.get("target", "main surface"))
-                  value = "deterministic broad stripe"
-              else:
-                  local = inside.astype(np.uint8)
-                  eroded = cv2.erode(local, np.ones((3, 3), np.uint8), iterations=1) > 0
-                  boundary = inside & ~eroded
-                  by, bx = np.where(boundary)
-                  if len(bx) == 0:
-                      by, bx = np.where(inside)
-                  pick = int(np.argmax(bx))
-                  cy, cx = int(by[pick]), int(bx[pick])
-                  radius = max(4, int(math.sqrt(np.count_nonzero(inside) * 0.16 / math.pi)))
-                  gy, gx = np.ogrid[:after.shape[0], :after.shape[1]]
-                  notch = ((gx - cx) ** 2 + (gy - cy) ** 2 <= radius ** 2) & inside
-                  outside = ~inside
-                  if np.any(outside):
-                      fill_rgb = before[outside].mean(axis=0)
-                  else:
-                      fill_rgb = 255.0 - mean
-                  mixed = after.astype(np.float32)
-                  mixed[notch] = mixed[notch] * 0.05 + fill_rgb * 0.95
-                  after = np.clip(mixed, 0, 255).astype(np.uint8)
-                  edit_type = "single_structural_detail"
-                  target_part = "outer silhouette"
-                  value = "deterministic local contour notch"
-
-              changed = (np.mean(np.abs(after.astype(np.int16) - before.astype(np.int16)), axis=2) > 8) & inside
-              cyy, cxx = np.where(changed)
-              if len(cxx) == 0:
-                  raise RuntimeError("Emergency deterministic edit produced no visible changed pixels")
-
-              mask_local = (inside.astype(np.uint8) * 255)
-              pixel = core.inpaint_qa(before, after, mask_local)
-              pixel["changed_bbox"] = [
-                  int(cxx.min()) + x0,
-                  int(cyy.min()) + y0,
-                  int(cxx.max()) + 1 + x0,
-                  int(cyy.max()) + 1 + y0,
-              ]
-              clean = clean_difference_qa_typed(before, after, mask_local, edit_type)
-              structure = strict.structure_qa(before, after, mask_local)
-
-              candidate = image.copy()
-              candidate.paste(Image.fromarray(after, "RGB"), (x0, y0))
-              try:
-                  semantic_qa = strict.semantic_qa(
-                      candidate,
-                      target,
-                      max(1e-6, float(target.get("category_confidence", 0.0))),
-                  )
-              except Exception as exc:
-                  semantic_qa = {"passed": False, "reason": str(exc)}
-              semantic_qa = dict(semantic_qa)
-              semantic_qa["advisory_only"] = True
-
-              visual_ok = bool(pixel.get("passed")) and bool(clean.get("passed")) and bool(structure.get("passed"))
-              if not visual_ok:
-                  print(
-                      f"[emergency] deterministic {group} QA override: "
-                      f"pixel={pixel.get('passed')} clean={clean.get('passed')} structure={structure.get('passed')}"
-                  )
-
-              plan = {
-                  "category": category,
-                  "category_label": rule["object"],
-                  "classifier_confidence": target.get("category_confidence", 0.0),
-                  "edit_type": edit_type,
-                  "difference_group": group,
-                  "target_part": target_part,
-                  "value": value,
-                  "color_distance": 0.0,
-                  "prompt": "deterministic emergency completion",
-                  "emergency_mode": True,
-              }
-              return candidate, {
-                  "backend": "deterministic-emergency",
-                  "model": "none",
-                  "attempt": 1,
-                  "closed_set_plan": plan,
-                  "single_object": True,
-                  "mask_refinement": target.get("mask_refinement"),
-                  "raw_single_object": target.get("raw_single_object"),
-                  "refined_single_object": target.get("refined_single_object"),
-                  "object_filter": target.get("object_filter"),
-                  "crop": [x0, y0, x1, y1],
-                  "pixel_qa": pixel,
-                  "clean_difference_qa": clean,
-                  "structure_qa": structure,
-                  "semantic_qa": semantic_qa,
-                  "emergency_mode": True,
-                  "emergency_qa_override": not visual_ok,
-              }
-
-
-          _NORMAL_TYPED_EDIT = diffusers_edit_closed_set_typed
-
-
-          def diffusers_edit_closed_set_typed(
-              image: Image.Image,
-              target: dict[str, object],
-              seed: int,
-              number: int,
-          ):
-              if target.get("emergency_mode"):
-                  print(
-                      f"[emergency] deterministic completion edit {number}: "
-                      f"group={target.get('required_difference_group')} category={target.get('category')}"
-                  )
-                  return _emergency_direct_edit(image, target, seed, number)
-              return _NORMAL_TYPED_EDIT(image, target, seed, number)
-
-
-          def create_pair_grouped(base: Image.Image, seed: int):
-              """Accept color/pattern/structural; hard-complete the final scene after 0.19 fails."""
-              candidates = detect_group_ready_candidates(base)
-              final_regen = _final_regeneration_active()
-              spread_levels = [scene.MIN_SPREAD]
-              if final_regen:
-                  for fallback_spread in (0.21, 0.19):
-                      if fallback_spread < spread_levels[-1]:
-                          spread_levels.append(fallback_spread)
-
-              last_spread_error = None
-              preferred = None
-              min_spread = scene.MIN_SPREAD
-              emergency_mode = False
-              for candidate_spread in spread_levels:
-                  try:
-                      preferred = _best_grouped_triplet(candidates, base.size, candidate_spread)
-                  except RuntimeError as exc:
-                      last_spread_error = exc
-                      if candidate_spread != spread_levels[-1]:
-                          print(
-                              f"[diversity] final-scene spread {candidate_spread:.2f} unavailable; "
-                              f"trying {spread_levels[spread_levels.index(candidate_spread) + 1]:.2f}"
-                          )
-                      continue
-                  min_spread = candidate_spread
-                  if min_spread < scene.MIN_SPREAD:
-                      print(
-                          f"[diversity] final-scene spread fallback active: "
-                          f"{scene.MIN_SPREAD:.2f} -> {min_spread:.2f}"
-                      )
-                  break
-
-              if preferred is None:
-                  if not final_regen:
-                      raise last_spread_error or RuntimeError("No valid grouped triplet")
-                  preferred = _best_grouped_triplet(candidates, base.size, None)
-                  emergency_mode = True
-                  min_spread = 0.0
-                  diag = math.hypot(*base.size)
-                  achieved = min(
-                      _distance(preferred[0], preferred[1]),
-                      _distance(preferred[0], preferred[2]),
-                      _distance(preferred[1], preferred[2]),
-                  ) / max(1.0, diag)
-                  print(
-                      f"[emergency] 0.19 unavailable; guaranteed completion active. "
-                      f"best available min spread={achieved:.3f}"
-                  )
-
-              preferred_keys = [_key(x) for x in preferred]
               edited = base.copy()
               regions: list[dict[str, object]] = []
               metadata: list[dict[str, object]] = []
               accepted: list[dict[str, object]] = []
-              used: set[tuple[int, int, int, int]] = set()
-              diag = math.hypot(*base.size)
-              need = diag * min_spread
+              pending = list(candidates)
               attempted = 0
+              original_plan = strict.plan_edit
 
-              for slot, group in ((1, "color"), (2, "pattern"), (3, "structural")):
-                  while len(accepted) < slot and attempted < core.MAX_INPAINT_CANDIDATES:
+              # Restore the normal diverse planner for this mode. This removes the
+              # mandatory color/pattern/structural grouping while retaining the
+              # same Diffusers renderer and pixel/clean/structure/semantic QA.
+              strict.plan_edit = cpuopt._ORIGINAL_PLAN
+              try:
+                  while len(accepted) < 3 and attempted < core.MAX_INPAINT_CANDIDATES:
                       eligible = []
-                      for item in candidates:
-                          item_key = _key(item)
-                          if item_key in used:
-                              continue
-                          if group == "structural" and not item.get("structural_capable"):
-                              continue
-                          if not _far_from_all(item, accepted, need):
+                      for pending_index, item in enumerate(pending):
+                          item_box = _key(item)
+                          if any(
+                              _quality_only_boxes_overlap(item_box, _key(old), pad=4)
+                              for old in accepted
+                          ):
                               continue
 
-                          if group != "structural":
-                              excluded = set(used)
-                              excluded.add(item_key)
-                              if group == "color":
-                                  has_path = False
-                                  for p in candidates:
-                                      pk = _key(p)
-                                      if pk in excluded or pk == item_key:
-                                          continue
-                                      if _distance(item, p) < need:
-                                          continue
-                                      excluded2 = set(excluded)
-                                      excluded2.add(pk)
-                                      if _has_structural_completion(candidates, [item, p], need, excluded2):
-                                          has_path = True
-                                          break
-                                  if not has_path:
-                                      continue
-                              elif not _has_structural_completion(candidates, accepted + [item], need, excluded):
-                                  continue
-
-                          preferred_bonus = 2.2 if item_key == preferred_keys[slot - 1] else 0.0
-                          surface = item.get("render_preflight") or {}
-                          surface_bonus = 0.0
-                          if group == "pattern":
-                              surface_bonus = (
-                                  float(surface.get("interior_ratio", 0.0)) * 1.8
-                                  + float(surface.get("fill", 0.0)) * 0.8
-                              )
                           priority = (
-                              float(item.get("renderability_score", 0.0)) * 2.3
-                              + float(item.get("quality", 0.0)) * 0.07
-                              + preferred_bonus
-                              + surface_bonus
+                              float(item.get("renderability_score", 0.0)) * 2.5
+                              + float(item.get("quality", 0.0)) * 0.08
+                              + float(item.get("category_confidence", 0.0)) * 2.0
                           )
-                          if accepted:
-                              priority += min(_distance(item, old) for old in accepted) / diag * 6.5
-                          else:
-                              priority += float(item.get("noncentral_score", 0.0)) * 2.0
-                          eligible.append((priority, item))
+                          eligible.append((priority, pending_index, item))
 
                       if not eligible:
-                          raise RuntimeError(
-                              f"No remaining {group} candidate can preserve the required three-group plan"
-                          )
+                          break
 
-                      eligible.sort(key=lambda pair: pair[0], reverse=True)
-                      original = eligible[0][1]
-                      used.add(_key(original))
+                      eligible.sort(key=lambda row: row[0], reverse=True)
+                      selected_index = eligible[0][1]
+                      original = pending.pop(selected_index)
                       attempted += 1
+                      number = len(accepted) + 1
                       item = dict(original)
-                      item["difference_slot"] = slot
-                      item["required_difference_group"] = group
-                      item["emergency_mode"] = bool(
-                          emergency_mode or item.get("emergency_structural_promoted")
-                      )
+                      item["difference_slot"] = number
+
                       print(
-                          f"[diversity] inpaint candidate {attempted}: slot={slot} group={group} "
-                          f"category={item.get('category')} render={item.get('renderability_score', 0):.2f} "
-                          f"bbox={item.get('bbox')} emergency={item.get('emergency_mode')}"
+                          f"[quality-only] candidate {attempted}: slot={number} "
+                          f"category={item.get('category')} "
+                          f"render={float(item.get('renderability_score', 0.0)):.2f} "
+                          f"bbox={item.get('bbox')}"
                       )
 
                       try:
                           candidate, meta = strict.diffusers_edit_closed_set(
                               edited,
                               item,
-                              seed + slot * 104729 + attempted * 4099,
-                              slot,
+                              seed + number * 104729 + attempted * 4099,
+                              number,
                           )
                       except RuntimeError as exc:
                           print(
-                              f"[diversity] {group} candidate rejected "
+                              f"[quality-only] quality candidate rejected "
                               f"({attempted}/{core.MAX_INPAINT_CANDIDATES}): {exc}"
                           )
                           continue
 
-                      plan = meta["closed_set_plan"]
-                      actual_group = str(plan.get("difference_group", _edit_group(str(plan["edit_type"]))))
-                      if actual_group != group:
-                          raise RuntimeError(
-                              f"Accepted edit violated diversity invariant: required={group} actual={actual_group}"
-                          )
-
                       x0, y0, x1, y1 = map(int, meta["pixel_qa"]["changed_bbox"])
+                      changed_box = (x0, y0, x1, y1)
+                      if any(
+                          _quality_only_boxes_overlap(changed_box, tuple(r["changed_bbox"]), pad=6)
+                          for r in regions
+                      ):
+                          print("[quality-only] changed region overlaps an accepted difference; reject")
+                          continue
+
+                      plan = meta["closed_set_plan"]
                       rx, ry = (x0 + x1) // 2, (y0 + y1) // 2
                       radius = max(18, int(math.hypot(x1 - x0, y1 - y0) * 0.54))
+                      actual_group = str(
+                          plan.get("difference_group", _edit_group(str(plan["edit_type"])))
+                      )
+
                       edited = candidate
                       accepted.append(item)
                       metadata.append(meta)
                       regions.append(
                           {
-                              "number": slot,
+                              "number": number,
                               "x": rx,
                               "y": ry,
                               "r": radius,
@@ -810,30 +325,92 @@ jobs:
                               "area_ratio": round(float(item["ratio"]), 5),
                               "category": item["category"],
                               "edit_type": plan["edit_type"],
-                              "difference_group": group,
+                              "difference_group": actual_group,
                               "target_part": plan["target_part"],
                               "single_object": True,
                               "noncentral": True,
-                              "renderability_score": round(float(item.get("renderability_score", 0.0)), 4),
-                              "emergency_mode": bool(item.get("emergency_mode")),
+                              "renderability_score": round(
+                                  float(item.get("renderability_score", 0.0)), 4
+                              ),
+                              "quality_only_final_mode": True,
                           }
                       )
+              finally:
+                  strict.plan_edit = original_plan
 
               if len(regions) != 3:
                   raise RuntimeError(
-                      f"Only {len(regions)}/3 grouped single-object differences passed after {attempted} candidates"
+                      f"Quality-only final mode accepted only {len(regions)}/3 differences "
+                      f"after {attempted} candidates; quality QA remains mandatory"
                   )
-              groups = [str(x["difference_group"]) for x in regions]
-              if groups != ["color", "pattern", "structural"]:
-                  raise RuntimeError(f"Difference group invariant failed at finalization: {groups}")
+
+              print("[quality-only] accepted 3/3 differences with normal quality QA")
               return edited, regions, metadata
 
 
-          '''
-          text = text.replace(marker, emergency_block + marker, 1)
+          _STRICT_GROUPED_PAIR = create_pair_grouped
 
+
+          def create_pair_grouped(base: Image.Image, seed: int):
+              """Normal grouped mode; final regeneration falls back to quality-only after 0.19."""
+              provider_meta = getattr(strict, "_LAST_PROVIDER_META", None) or {}
+              regen_attempt = int(provider_meta.get("scene_regeneration_attempt", 0) or 0)
+              final_regen = (
+                  strict.SCENE_REGEN_RETRIES > 0
+                  and regen_attempt >= strict.SCENE_REGEN_RETRIES
+              )
+
+              if not final_regen:
+                  return _STRICT_GROUPED_PAIR(base, seed)
+
+              original_spread = scene.MIN_SPREAD
+              spread_levels = [original_spread]
+              for fallback_spread in (0.21, 0.19):
+                  if fallback_spread < spread_levels[-1]:
+                      spread_levels.append(fallback_spread)
+
+              errors = []
+              try:
+                  for min_spread in spread_levels:
+                      scene.MIN_SPREAD = min_spread
+                      try:
+                          result = _STRICT_GROUPED_PAIR(base, seed)
+                      except RuntimeError as exc:
+                          errors.append(f"{min_spread:.2f}: {exc}")
+                          print(
+                              f"[quality-only] grouped mode failed at spread "
+                              f"{min_spread:.2f}: {exc}"
+                          )
+                          # A missing structural candidate cannot be fixed by lowering spread.
+                          if "structural-detail candidate survived prefilter" in str(exc):
+                              break
+                          continue
+
+                      if min_spread < original_spread:
+                          print(
+                              f"[diversity] final-scene spread fallback active: "
+                              f"{original_spread:.2f} -> {min_spread:.2f}"
+                          )
+                      return result
+
+                  scene.MIN_SPREAD = original_spread
+                  print(
+                      "[quality-only] grouped constraints exhausted; "
+                      "dropping spread/group requirements but keeping all edit QA"
+                  )
+                  return _create_pair_quality_only_final(base, seed)
+              finally:
+                  scene.MIN_SPREAD = original_spread
+
+
+          '''
+
+          text = text.replace(marker, block + marker, 1)
           path.write_text(text, encoding="utf-8")
-          print("Applied final-scene fallback: 0.23 -> 0.21 -> 0.19 -> guaranteed deterministic completion")
+          print(
+              "Applied final-scene quality-only fallback: "
+              "0.23 -> 0.21 -> 0.19 -> quality-only with QA preserved"
+          )
           PYCODE
 
       - uses: actions/setup-python@v5
