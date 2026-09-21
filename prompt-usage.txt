@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=3
+LAST_RUN_NUMBER=4
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=40
-REMAINING_UNIQUE=560
-LAST_RUN_PROMPT_INDEXES=31,32,33,34,35,36,37,38,39,40
-NEXT_CANDIDATE_INDEX=41
+USED_UNIQUE_COUNT=50
+REMAINING_UNIQUE=550
+LAST_RUN_PROMPT_INDEXES=41,42,43,44,45,46,47,48,49,50
+NEXT_CANDIDATE_INDEX=51
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -48,3 +48,13 @@ USED	3	37	d1ca31dd38904126f7cb43f84b99d66c1bc91a589c7ef3e54b263a8b98f854ee	hardw
 USED	3	38	580adda26e05b787a25c605d96c02f1aa16d6754c558935c543fc9b89dbc1dff	science classroom lab bench; isolated props: bag, ball, bottle, chair, kite, vase; unique peripheral composition with a quiet center.
 USED	3	39	1ab115674aa2ae810d67a717b10dc579169c8215b50b0c176ac985505e30d497	geography study room; isolated props: basket, camera, fruit, gift box, plant pot, umbrella; unique peripheral composition with a quiet center.
 USED	3	40	b49cadcba9e59fdfb6fd7dcae2f12b44287f7b9fc00ea73d9057743d7674e709	library reading alcove; isolated props: bag, bench, bottle, candle, cup, lamp; unique peripheral composition with a quiet center.
+USED	4	41	af8f01bab0510f2a7345098266c820240af78571d74c55b67e21b6b7d414e605	independent bookstore display; isolated props: bucket, clock, crate, shoe, teapot, umbrella; unique peripheral composition with a quiet center.
+USED	4	42	4468c57e4b603c1be5f8b4beb546891335125aa19300a4e69c3d9c4e1fc2dfe3	comic shop collectible shelf; isolated props: box, camera, clock, crate, fruit, teapot; unique peripheral composition with a quiet center.
+USED	4	43	7a4915a4995c618d44d31722d0da431b94a8c54e3f2ba7a5decbacb0eb5a65c8	photo studio prop table; isolated props: bench, crate, drum, suitcase, teapot, vase; unique peripheral composition with a quiet center.
+USED	4	44	47b07cd242e1f8c9b2f8fd5ca36416897c8d70704075ecb330aa7569c3a48e85	camera repair bench; isolated props: bottle, box, fruit, hat, lantern, mailbox; unique peripheral composition with a quiet center.
+USED	4	45	59ea1957e31e05035a5d9ecb741ad965390d9483590e6d9babcaa85b1f801cc7	radio hobby workshop; isolated props: basket, box, fruit, plant pot, radio, teapot; unique peripheral composition with a quiet center.
+USED	4	46	9d12417e4b9be362568225df1a1d7a67d4a4a433307e7ec58fb85d17469a78be	electronics maker desk; isolated props: bag, bench, camera, hat, lamp, plant pot; unique peripheral composition with a quiet center.
+USED	4	47	7896c87b529461bf9092465cfb1aac540aceafece0484ac595c0f8ff2835af3e	model railway room; isolated props: box, bucket, kite, plant pot, radio, toy train; unique peripheral composition with a quiet center.
+USED	4	48	1cb5083406d168a8465494b567de5f246958c53193b0f3996b520cf29787334e	model airplane workshop; isolated props: candle, crate, lamp, mailbox, shoe, suitcase; unique peripheral composition with a quiet center.
+USED	4	49	e49e9bbe5c24f3c74339eaf8b52faa142bb6d98c93935b82457a98cd6d622a95	space-toy bedroom shelf without people; isolated props: candle, chair, crate, drum, mailbox, plant pot; unique peripheral composition with a quiet center.
+USED	4	50	1b2413f86c0b28e7328111c16dba816bf46b1e70d92488c37959cd032b6c61c7	carnival prize booth; isolated props: ball, bottle, camera, hat, kite, shoe; unique peripheral composition with a quiet center.
