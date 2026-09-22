@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=4
+LAST_RUN_NUMBER=5
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=50
-REMAINING_UNIQUE=550
-LAST_RUN_PROMPT_INDEXES=41,42,43,44,45,46,47,48,49,50
-NEXT_CANDIDATE_INDEX=51
+USED_UNIQUE_COUNT=60
+REMAINING_UNIQUE=540
+LAST_RUN_PROMPT_INDEXES=51,52,53,54,55,56,57,58,59,60
+NEXT_CANDIDATE_INDEX=61
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -58,3 +58,13 @@ USED	4	47	7896c87b529461bf9092465cfb1aac540aceafece0484ac595c0f8ff2835af3e	model
 USED	4	48	1cb5083406d168a8465494b567de5f246958c53193b0f3996b520cf29787334e	model airplane workshop; isolated props: candle, crate, lamp, mailbox, shoe, suitcase; unique peripheral composition with a quiet center.
 USED	4	49	e49e9bbe5c24f3c74339eaf8b52faa142bb6d98c93935b82457a98cd6d622a95	space-toy bedroom shelf without people; isolated props: candle, chair, crate, drum, mailbox, plant pot; unique peripheral composition with a quiet center.
 USED	4	50	1b2413f86c0b28e7328111c16dba816bf46b1e70d92488c37959cd032b6c61c7	carnival prize booth; isolated props: ball, bottle, camera, hat, kite, shoe; unique peripheral composition with a quiet center.
+USED	5	51	c35feae4ebfa1fb4b05998d8fbff928e81fe04eaa0c5a482a31585bcaa8711fd	amusement-park maintenance shelf; isolated props: bag, book, camera, chair, flower, fruit; unique peripheral composition with a quiet center.
+USED	5	52	11f5b5126d07d36192eed5e53b1a9d976674710c3c6051af4fe75920d8bcfb8a	bowling alley equipment rack; isolated props: book, box, drum, lamp, toy block, watering can; unique peripheral composition with a quiet center.
+USED	5	53	8eef1f2219d66e60a21007e1b98aaf8102a0040ba2ef00b3f24a46be3499acdd	tennis clubhouse gear corner; isolated props: bucket, crate, drum, lamp, suitcase, toy block; unique peripheral composition with a quiet center.
+USED	5	54	a994bd2393bb517ce2b2f9ba088ab84874541550265d4c1fa37da62119a343c9	baseball equipment room; isolated props: bench, bicycle, flag, flower, gift box, shoe; unique peripheral composition with a quiet center.
+USED	5	55	e41183df93da66f82a72102c07c51e46527cf82f6e4f7a9e389edb2d01b54097	soccer clubhouse gear room; isolated props: basket, bucket, clock, flower, fruit, gift box; unique peripheral composition with a quiet center.
+USED	5	56	a894ab31fed00548be10bb64e5911fc9189392efd75d4315ec5106304a28fd0a	skating rink rental shelf; isolated props: gift box, mailbox, plant pot, toy block, toy train, watering can; unique peripheral composition with a quiet center.
+USED	5	57	92b7a62950a7cd07b46e0a2e6b1107a352a9f9ca05b3f0910e191269d384376e	ski lodge equipment corner; isolated props: basket, candle, kite, teapot, toy block, toy train; unique peripheral composition with a quiet center.
+USED	5	58	3342a526c92bdf287821d68fb487d80855371ee05da92e9d21f0afe8d3c4b1a7	beach hut equipment wall; isolated props: ball, book, drum, mailbox, plant pot, toy train; unique peripheral composition with a quiet center.
+USED	5	59	cf3677a8a9dfa6a25b50a1ee6d6c98ec5d3960001913ecec7ef75f74b5f862a0	surf shop display; isolated props: basket, bicycle, hat, lamp, lantern, radio; unique peripheral composition with a quiet center.
+USED	5	60	7a0d553384d7cf6c48b7b62f08a3aefb9bcd95e446c23440582e0520cd9f204c	diving gear store corner; isolated props: book, fruit, lantern, plant pot, suitcase, toy train; unique peripheral composition with a quiet center.
