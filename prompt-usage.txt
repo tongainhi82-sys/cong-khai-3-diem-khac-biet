@@ -1,11 +1,11 @@
 # AUTO-UPDATED AFTER EACH SUCCESSFUL RUN. PROMPTS AUTO-ADVANCE AND ARE DE-DUPLICATED BY SHA-256.
 PROMPT_SEQUENCE_MODE=automatic-next-unused
-LAST_RUN_NUMBER=8
+LAST_RUN_NUMBER=9
 TOTAL_AVAILABLE_UNIQUE=600
-USED_UNIQUE_COUNT=90
-REMAINING_UNIQUE=510
-LAST_RUN_PROMPT_INDEXES=81,82,83,84,85,86,87,88,89,90
-NEXT_CANDIDATE_INDEX=91
+USED_UNIQUE_COUNT=100
+REMAINING_UNIQUE=500
+LAST_RUN_PROMPT_INDEXES=91,92,93,94,95,96,97,98,99,100
+NEXT_CANDIDATE_INDEX=101
 
 # USED<TAB>run_number<TAB>prompt_index<TAB>sha256<TAB>prompt
 USED	3	1	1d07c0327f4aa6b1f54214a7a2c8aee692677a3ef02006a00e12750cb5d5523c	rooftop greenhouse at sunrise; isolated props: bucket, flag, hat, mailbox, vase, watering can; unique peripheral composition with a quiet center.
@@ -98,3 +98,13 @@ USED	8	87	6e096c4ffae20c7058f042853bd996951b1a57d00e83c7c2946bd0e076646e22	birdw
 USED	8	88	0f98cd492de9a41fe8e717d8e324e2f627475983796ca28292506af3c786a5d3	park ranger desk; isolated props: bicycle, book, drum, lamp, shoe, toy block; unique peripheral composition with a quiet center.
 USED	8	89	f827bc929865783e6c8d537198481a3949f7dbd053167b282b4de9e7ddfdfbc8	fire lookout cabin interior; isolated props: basket, bottle, fruit, hat, plant pot, vase; unique peripheral composition with a quiet center.
 USED	8	90	d7cb7aa8bd008487e99c0b8be389654292c19b263aeff4be3b0bb050e8a46090	rain gear shop; isolated props: bag, ball, camera, lantern, suitcase, toy block; unique peripheral composition with a quiet center.
+USED	9	91	32083231a0a61ff4f545a1b98c4c58f88a3e044f9a7e1dc9c99ec2c9fd919863	umbrella repair table; isolated props: box, gift box, lantern, scarf, toy train, watering can; unique peripheral composition with a quiet center.
+USED	9	92	88fa868d3cbe5ae95f9470e803e9260eab268919343573f5bfc9240fabd66d0e	riverside cycling picnic; isolated props: book, chair, flower, gift box, scarf, vase; unique peripheral composition with a quiet center.
+USED	9	93	e1a20278b050e16dec2274dd20ef58247baa9b32f81dc6115248b687b6539952	moon-viewing garden veranda; isolated props: bench, bucket, drum, mailbox, shoe, watering can; unique peripheral composition with a quiet center.
+USED	9	94	11c625ba617be82c63e959a392e5702aa688991cdf3e63a26301992538d6cffd	autumn shrine courtyard props; isolated props: basket, bicycle, clock, shoe, vase, watering can; unique peripheral composition with a quiet center.
+USED	9	95	c029c763f6d7ae6bef854faa7b3b8adb9a00321cc2eeee00303d70b539613fc6	snowy hot-spring entrance props; isolated props: ball, bucket, candle, crate, flag, teapot; unique peripheral composition with a quiet center.
+USED	9	96	1c3ff678ded7d3faa8911bd1e0726dc9673e0e6fa5f17ade8b38eff15c1f492c	spring festival decoration workshop; isolated props: ball, bucket, drum, flower, lantern, radio; unique peripheral composition with a quiet center.
+USED	9	97	2f8462680272423176e72e4f82736defb5de4ab47409d8c27138a75be0c062cb	summer evening paper-decoration table; isolated props: fruit, kite, lamp, mailbox, toy block, toy train; unique peripheral composition with a quiet center.
+USED	9	98	c7c1d31131038ec3c4c7cc254bd6960e523794c6201db998f92afc5001e6f38b	ocean research equipment bench; isolated props: chair, cup, kite, lantern, mailbox, shoe; unique peripheral composition with a quiet center.
+USED	9	99	e376f7799110bafea1fd489611c9c9a5965ef9ae01820ff10748b7a263357d3b	desert astronomy campsite; isolated props: bag, book, chair, cup, kite, mailbox; unique peripheral composition with a quiet center.
+USED	9	100	fadbfea556d096a05ef12ed6920ee418f153864637533742a04a56632e1954f4	forest nature-study table; isolated props: ball, bucket, flag, gift box, shoe, watering can; unique peripheral composition with a quiet center.
